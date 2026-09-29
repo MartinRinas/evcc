@@ -103,6 +103,28 @@ func (lp *Loadpoint) SetDefaultVehicleRef(ref string) {
 	lp.settings.SetString(keys.DefaultVehicle, ref)
 }
 
+// GetFallbackVehicleRef returns the loadpoint fallback vehicle
+func (lp *Loadpoint) GetFallbackVehicleRef() string {
+	lp.RLock()
+	defer lp.RUnlock()
+	return lp.FallbackVehicleRef
+}
+
+// SetFallbackVehicleRef sets the loadpoint fallback vehicle
+func (lp *Loadpoint) SetFallbackVehicleRef(ref string) {
+	if !lp.isConfigurable() {
+		lp.log.ERROR.Println("cannot set fallback vehicle ref: not configurable")
+		return
+	}
+
+	lp.log.DEBUG.Println("set fallback vehicle ref:", ref)
+
+	lp.Lock()
+	defer lp.Unlock()
+	lp.FallbackVehicleRef = ref
+	lp.settings.SetString(keys.FallbackVehicle, ref)
+}
+
 // GetTitle returns the loadpoint title
 func (lp *Loadpoint) GetTitle() string {
 	lp.RLock()

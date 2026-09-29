@@ -286,7 +286,8 @@ func (lp *Loadpoint) vehicleHasFeature(f api.Feature) bool {
 
 // vehicleUnidentified returns true if there are associated vehicles and detection is running.
 // It will also reset the api cache at regular intervals.
-// Detection is stopped after maximum duration and the "guest vehicle" message dispatched.
+// Detection is stopped after maximum duration. The configured fallback vehicle is assigned,
+// otherwise the "guest vehicle" message dispatched.
 func (lp *Loadpoint) vehicleUnidentified() bool {
 	if lp.vehicle != nil || lp.vehicleDetect.IsZero() || len(lp.coordinatedVehicles()) == 0 {
 		return false
@@ -295,7 +296,9 @@ func (lp *Loadpoint) vehicleUnidentified() bool {
 	// stop detection
 	if lp.clock.Since(lp.vehicleDetect) > vehicleDetectDuration {
 		lp.stopVehicleDetection()
-		lp.pushEvent(evVehicleUnidentified)
+		if !lp.applyFallbackVehicle() {
+			lp.pushEvent(evVehicleUnidentified)
+		}
 		return false
 	}
 
@@ -306,6 +309,26 @@ func (lp *Loadpoint) vehicleUnidentified() bool {
 		util.ResetCached()
 	default:
 	}
+
+	return true
+}
+
+// applyFallbackVehicle assigns the configured fallback vehicle after detection has failed.
+// It returns false if no usable fallback vehicle is configured, leaving the guest vehicle behavior in place.
+func (lp *Loadpoint) applyFallbackVehicle() bool {
+	v := lp.fallbackVehicle
+	if v == nil {
+		return false
+	}
+
+	// never take over a vehicle that is owned by another loadpoint or no longer known
+	if !slices.Contains(lp.availableVehicles(), v) {
+		lp.log.DEBUG.Printf("fallback vehicle unavailable: %s", v.GetTitle())
+		return false
+	}
+
+	lp.log.DEBUG.Printf("fallback vehicle: %s", v.GetTitle())
+	lp.setActiveVehicle(v)
 
 	return true
 }

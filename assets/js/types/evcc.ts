@@ -503,6 +503,7 @@ export interface ConfigLoadpoint {
   charger: string;
   meter: string;
   vehicle: string;
+  fallbackVehicle?: string;
   title: string;
   defaultMode: string;
   priority: number;

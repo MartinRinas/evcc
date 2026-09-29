@@ -54,6 +54,10 @@ type API interface {
 	GetDefaultVehicleRef() string
 	// SetDefaultVehicleRef sets the loadpoint default vehicle
 	SetDefaultVehicleRef(string)
+	// GetFallbackVehicleRef returns the loadpoint fallback vehicle
+	GetFallbackVehicleRef() string
+	// SetFallbackVehicleRef sets the loadpoint fallback vehicle
+	SetFallbackVehicleRef(string)
 
 	//
 	// settings

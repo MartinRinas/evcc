@@ -12,6 +12,7 @@ const (
 	Meter             = "meter"            // meter ref
 	Circuit           = "circuit"          // circuit ref
 	DefaultVehicle    = "vehicle"          // default vehicle ref
+	FallbackVehicle   = "fallbackVehicle"  // fallback vehicle ref
 	Priority          = "priority"         // priority
 	MinCurrent        = "minCurrent"       // min current
 	MaxCurrent        = "maxCurrent"       // max current
