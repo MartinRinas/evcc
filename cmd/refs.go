@@ -111,11 +111,12 @@ func collectTariffRefs() error {
 func collectLoadpointRefs(named iter.Seq[config.Named]) error {
 	for cc := range named {
 		var refs struct {
-			CircuitRef string         `mapstructure:"circuit"` // Circuit reference
-			ChargerRef string         `mapstructure:"charger"` // Charger reference
-			VehicleRef string         `mapstructure:"vehicle"` // Vehicle reference
-			MeterRef   string         `mapstructure:"meter"`   // Charge meter reference
-			Other      map[string]any `mapstructure:",remain"`
+			CircuitRef         string         `mapstructure:"circuit"`         // Circuit reference
+			ChargerRef         string         `mapstructure:"charger"`         // Charger reference
+			VehicleRef         string         `mapstructure:"vehicle"`         // Vehicle reference
+			FallbackVehicleRef string         `mapstructure:"fallbackVehicle"` // Fallback vehicle reference
+			MeterRef           string         `mapstructure:"meter"`           // Charge meter reference
+			Other              map[string]any `mapstructure:",remain"`
 		}
 
 		if err := util.DecodeOther(cc.Other, &refs); err != nil {
@@ -124,7 +125,7 @@ func collectLoadpointRefs(named iter.Seq[config.Named]) error {
 
 		references.meter = append(references.meter, refs.MeterRef)
 		references.charger = append(references.charger, refs.ChargerRef)
-		references.vehicle = append(references.vehicle, refs.VehicleRef)
+		references.vehicle = append(references.vehicle, refs.VehicleRef, refs.FallbackVehicleRef)
 		references.circuit = append(references.circuit, refs.CircuitRef)
 	}
 

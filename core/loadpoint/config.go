@@ -13,7 +13,7 @@ type StaticConfig struct {
 	Meter   string `json:"meter,omitempty"`
 	Circuit string `json:"circuit,omitempty"`
 	Vehicle string `json:"vehicle,omitempty"`
-	// FallbackVehicle is assigned when automatic vehicle detection did not identify a vehicle
+	// FallbackVehicle is assigned when automatic detection did not identify a vehicle
 	FallbackVehicle string `json:"fallbackVehicle,omitempty"`
 }
 
