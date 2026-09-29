@@ -265,6 +265,10 @@ func NewLoadpointFromConfig(log *util.Logger, settings settings.Settings, collec
 
 	// fallback vehicle, used when automatic detection did not identify a vehicle
 	if lp.FallbackVehicleRef != "" {
+		if lp.VehicleRef != "" {
+			lp.log.WARN.Printf("fallback vehicle '%s' is ignored: default vehicle '%s' disables detection", lp.FallbackVehicleRef, lp.VehicleRef)
+		}
+
 		dev, err := config.Vehicles().ByName(lp.FallbackVehicleRef)
 		if err != nil {
 			return lp, fmt.Errorf("fallback vehicle: %w", err)

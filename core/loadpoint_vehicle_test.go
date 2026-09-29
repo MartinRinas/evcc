@@ -690,17 +690,23 @@ func TestFallbackVehicleGuestBehavior(t *testing.T) {
 	fallback := fallbackMockVehicle(ctrl, "fallback")
 
 	tc := []struct {
-		name      string
-		configure bool
-		acquire   bool
+		name       string
+		configure  bool
+		coordinate bool
+		acquire    bool
 	}{
-		{"no fallback configured", false, false},
-		{"fallback owned by other loadpoint", true, true},
+		{"no fallback configured", false, true, false},
+		{"fallback unknown to coordinator", true, false, false},
+		{"fallback owned by other loadpoint", true, true, true},
 	}
 
 	for _, tc := range tc {
 		t.Run(tc.name, func(t *testing.T) {
-			c := coordinator.New(util.NewLogger("foo"), []api.Vehicle{detectible, fallback})
+			vehicles := []api.Vehicle{detectible}
+			if tc.coordinate {
+				vehicles = append(vehicles, fallback)
+			}
+			c := coordinator.New(util.NewLogger("foo"), vehicles)
 
 			lp, pushChan := fallbackVehicleLoadpoint(t, c)
 			if tc.configure {

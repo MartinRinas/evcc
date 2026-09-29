@@ -927,6 +927,12 @@ export default {
 				}
 			}
 		},
+		"values.vehicle"(vehicle) {
+			// a fixed vehicle disables detection, the fallback can never apply
+			if (vehicle) {
+				this.values.fallbackVehicle = "";
+			}
+		},
 		id(newId) {
 			// replaceModal swaps the id in place (after create) without a remount
 			if (this.isModalVisible && newId !== undefined && this.values?.id !== newId) {
