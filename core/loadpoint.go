@@ -94,10 +94,11 @@ type Loadpoint struct {
 	vmu          sync.RWMutex // guard vehicle
 
 	// exposed public configuration
-	CircuitRef string `mapstructure:"circuit"` // Circuit reference
-	ChargerRef string `mapstructure:"charger"` // Charger reference
-	VehicleRef string `mapstructure:"vehicle"` // Vehicle reference
-	MeterRef   string `mapstructure:"meter"`   // Charge meter reference
+	CircuitRef         string `mapstructure:"circuit"`         // Circuit reference
+	ChargerRef         string `mapstructure:"charger"`         // Charger reference
+	VehicleRef         string `mapstructure:"vehicle"`         // Vehicle reference
+	FallbackVehicleRef string `mapstructure:"fallbackVehicle"` // Fallback vehicle reference
+	MeterRef           string `mapstructure:"meter"`           // Charge meter reference
 
 	Soc             loadpoint.SocConfig
 	Enable, Disable loadpoint.ThresholdConfig
@@ -146,13 +147,14 @@ type Loadpoint struct {
 	chargeRater      api.ChargeRater
 	chargedAtStartup float64 // session energy at startup
 
-	circuit        api.Circuit        // Circuit
-	chargeMeter    *chargeMeter       // Charger usage meter
-	chargeEnergy   *metrics.Collector // Charger usage collector
-	vehicle        api.Vehicle        // Currently active vehicle
-	defaultVehicle api.Vehicle        // Default vehicle (disables detection)
-	coordinator    coordinator.API
-	socEstimator   *soc.Estimator
+	circuit         api.Circuit        // Circuit
+	chargeMeter     *chargeMeter       // Charger usage meter
+	chargeEnergy    *metrics.Collector // Charger usage collector
+	vehicle         api.Vehicle        // Currently active vehicle
+	defaultVehicle  api.Vehicle        // Default vehicle (disables detection)
+	fallbackVehicle api.Vehicle        // Fallback vehicle (assigned when detection failed)
+	coordinator     coordinator.API
+	socEstimator    *soc.Estimator
 
 	// charge planning
 	planner          *planner.Planner
@@ -259,6 +261,23 @@ func NewLoadpointFromConfig(log *util.Logger, settings settings.Settings, collec
 		if lp.defaultVehicle == nil {
 			// disabled vehicle
 			lp.log.DEBUG.Printf("default vehicle '%s' is disabled", lp.VehicleRef)
+		}
+	}
+
+	// fallback vehicle, used when automatic detection did not identify a vehicle
+	if lp.FallbackVehicleRef != "" {
+		if lp.VehicleRef != "" {
+			lp.log.WARN.Printf("fallback vehicle '%s' is ignored: default vehicle '%s' disables detection", lp.FallbackVehicleRef, lp.VehicleRef)
+		}
+
+		dev, err := config.Vehicles().ByName(lp.FallbackVehicleRef)
+		if err != nil {
+			return lp, fmt.Errorf("fallback vehicle: %w", err)
+		}
+		lp.fallbackVehicle = dev.Instance()
+		if lp.fallbackVehicle == nil {
+			// disabled vehicle
+			lp.log.DEBUG.Printf("fallback vehicle '%s' is disabled", lp.FallbackVehicleRef)
 		}
 	}
 

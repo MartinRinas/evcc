@@ -375,6 +375,20 @@ func (mr *MockAPIMockRecorder) GetEnableThreshold() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEnableThreshold", reflect.TypeOf((*MockAPI)(nil).GetEnableThreshold))
 }
 
+// GetFallbackVehicleRef mocks base method.
+func (m *MockAPI) GetFallbackVehicleRef() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFallbackVehicleRef")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// GetFallbackVehicleRef indicates an expected call of GetFallbackVehicleRef.
+func (mr *MockAPIMockRecorder) GetFallbackVehicleRef() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFallbackVehicleRef", reflect.TypeOf((*MockAPI)(nil).GetFallbackVehicleRef))
+}
+
 // GetLimitEnergy mocks base method.
 func (m *MockAPI) GetLimitEnergy() float64 {
 	m.ctrl.T.Helper()
@@ -969,6 +983,18 @@ func (m *MockAPI) SetEnableThreshold(threshold float64) {
 func (mr *MockAPIMockRecorder) SetEnableThreshold(threshold any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetEnableThreshold", reflect.TypeOf((*MockAPI)(nil).SetEnableThreshold), threshold)
+}
+
+// SetFallbackVehicleRef mocks base method.
+func (m *MockAPI) SetFallbackVehicleRef(arg0 string) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetFallbackVehicleRef", arg0)
+}
+
+// SetFallbackVehicleRef indicates an expected call of SetFallbackVehicleRef.
+func (mr *MockAPIMockRecorder) SetFallbackVehicleRef(arg0 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetFallbackVehicleRef", reflect.TypeOf((*MockAPI)(nil).SetFallbackVehicleRef), arg0)
 }
 
 // SetLimitEnergy mocks base method.

@@ -113,6 +113,8 @@ loadpoints:
     charger: wallbe # charger
     meter: charge # external charge meter (if charger has no meter included). NOT grid or pv meter.
     mode: "off" # default charge mode to apply when vehicle is disconnected; use "off" to disable by default if charger is publicly available
+    # vehicle: audi # fixed vehicle, always assumed to be charging here. Disables automatic vehicle detection
+    # fallbackVehicle: audi # vehicle assumed once automatic detection did not identify a vehicle. Without it a guest vehicle is used
 
     # remaining settings are experts-only and best left at default values
     priority: 0 # relative priority for concurrent charging in smart mode with multiple loadpoints (higher values have higher priority)

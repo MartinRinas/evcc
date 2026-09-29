@@ -691,8 +691,14 @@ func deleteDeviceHandler(site site.API) func(w http.ResponseWriter, r *http.Requ
 			// cleanup references
 			for _, dev := range h.Devices() {
 				lp := dev.Instance()
-				if lp != nil && lp.GetDefaultVehicleRef() == config.NameForID(id) {
+				if lp == nil {
+					continue
+				}
+				if lp.GetDefaultVehicleRef() == config.NameForID(id) {
 					lp.SetDefaultVehicleRef("")
+				}
+				if lp.GetFallbackVehicleRef() == config.NameForID(id) {
+					lp.SetFallbackVehicleRef("")
 				}
 			}
 

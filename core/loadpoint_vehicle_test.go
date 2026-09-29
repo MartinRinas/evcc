@@ -11,6 +11,7 @@ import (
 	"github.com/evcc-io/evcc/core/coordinator"
 	"github.com/evcc-io/evcc/core/settings"
 	"github.com/evcc-io/evcc/core/soc"
+	"github.com/evcc-io/evcc/messenger"
 	"github.com/evcc-io/evcc/util"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
@@ -663,4 +664,135 @@ func TestReconnectVehicle(t *testing.T) {
 			assert.Equal(t, vehicle, lp.vehicle, "vehicle should be detected")
 		})
 	}
+}
+
+// fallbackVehicleLoadpoint creates a loadpoint with running vehicle detection and
+// returns the loadpoint together with the channel receiving its push events.
+func fallbackVehicleLoadpoint(t *testing.T, c *coordinator.Coordinator) (*Loadpoint, chan messenger.Event) {
+	t.Helper()
+
+	lp := NewLoadpoint(util.NewLogger("foo"), settings.NewDatabaseSettingsAdapter("foo"))
+	lp.clock = clock.NewMock()
+	lp.coordinator = coordinator.NewAdapter(lp, c)
+
+	uiChan, _, lpChan := createChannels(t)
+	pushChan := make(chan messenger.Event, 8)
+	attachChannels(lp, uiChan, pushChan, lpChan)
+
+	lp.startVehicleDetection()
+
+	return lp, pushChan
+}
+
+func fallbackMockVehicle(ctrl *gomock.Controller, title string, features ...api.Feature) *api.MockVehicle {
+	v := api.NewMockVehicle(ctrl)
+	v.EXPECT().GetTitle().Return(title).AnyTimes()
+	v.EXPECT().Icon().Return("").AnyTimes()
+	v.EXPECT().Capacity().AnyTimes()
+	v.EXPECT().Phases().AnyTimes()
+	v.EXPECT().Features().Return(features).AnyTimes()
+	v.EXPECT().Identifiers().Return(nil).AnyTimes()
+	v.EXPECT().OnIdentified().AnyTimes()
+	return v
+}
+
+func TestFallbackVehicleOnDetectionTimeout(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
+	detectible := fallbackMockVehicle(ctrl, "detectible")
+	// fallback vehicle without autodetection support
+	fallback := fallbackMockVehicle(ctrl, "fallback", api.AutodetectDisabled)
+
+	lp, pushChan := fallbackVehicleLoadpoint(t, coordinator.New(util.NewLogger("foo"), []api.Vehicle{detectible, fallback}))
+	lp.fallbackVehicle = fallback
+
+	// detection still running
+	assert.True(t, lp.vehicleUnidentified(), "detection should be running")
+	assert.Nil(t, lp.vehicle, "fallback must not be applied while detecting")
+
+	// detection timed out
+	lp.clock.(*clock.Mock).Add(vehicleDetectDuration + time.Second)
+	assert.False(t, lp.vehicleUnidentified(), "detection should have stopped")
+
+	assert.Equal(t, fallback, lp.vehicle, "fallback vehicle should be assigned")
+	assert.True(t, lp.vehicleDetect.IsZero(), "detection should be stopped")
+	assert.Empty(t, pushChan, "guest vehicle event must not be sent")
+
+	// disconnect resets to the default vehicle (none)
+	lp.evVehicleDisconnectHandler()
+	assert.Nil(t, lp.vehicle, "vehicle should be reset on disconnect")
+}
+
+func TestFallbackVehicleGuestBehavior(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
+	detectible := fallbackMockVehicle(ctrl, "detectible")
+	fallback := fallbackMockVehicle(ctrl, "fallback")
+
+	tc := []struct {
+		name       string
+		configure  bool
+		coordinate bool
+		acquire    bool
+	}{
+		{"no fallback configured", false, true, false},
+		{"fallback unknown to coordinator", true, false, false},
+		{"fallback owned by other loadpoint", true, true, true},
+	}
+
+	for _, tc := range tc {
+		t.Run(tc.name, func(t *testing.T) {
+			vehicles := []api.Vehicle{detectible}
+			if tc.coordinate {
+				vehicles = append(vehicles, fallback)
+			}
+			c := coordinator.New(util.NewLogger("foo"), vehicles)
+
+			lp, pushChan := fallbackVehicleLoadpoint(t, c)
+			if tc.configure {
+				lp.fallbackVehicle = fallback
+			}
+
+			if tc.acquire {
+				other := NewLoadpoint(util.NewLogger("bar"), settings.NewDatabaseSettingsAdapter("bar"))
+				coordinator.NewAdapter(other, c).Acquire(fallback)
+			}
+
+			lp.clock.(*clock.Mock).Add(vehicleDetectDuration + time.Second)
+			assert.False(t, lp.vehicleUnidentified())
+
+			assert.Nil(t, lp.vehicle, "no vehicle should be assigned")
+			assert.Len(t, pushChan, 1, "guest vehicle event expected")
+		})
+	}
+}
+
+func TestFallbackVehicleNotAppliedWhenIdentified(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
+	vehicle := api.NewMockVehicle(ctrl)
+	vehicle.EXPECT().GetTitle().Return("detectible").AnyTimes()
+	vehicle.EXPECT().Icon().Return("").AnyTimes()
+	vehicle.EXPECT().Capacity().AnyTimes()
+	vehicle.EXPECT().Phases().AnyTimes()
+	vehicle.EXPECT().Features().Return(nil).AnyTimes()
+	vehicle.EXPECT().Identifiers().Return([]string{"rfid-1"}).AnyTimes()
+	vehicle.EXPECT().OnIdentified().AnyTimes()
+
+	fallback := fallbackMockVehicle(ctrl, "fallback")
+
+	lp, pushChan := fallbackVehicleLoadpoint(t, coordinator.New(util.NewLogger("foo"), []api.Vehicle{vehicle, fallback}))
+	lp.charger = &idCharger{id: "rfid-1"}
+	lp.fallbackVehicle = fallback
+
+	// charger identifier wins and stops detection
+	lp.identifyVehicle()
+	assert.Equal(t, vehicle, lp.vehicle, "identified vehicle must win")
+	assert.True(t, lp.vehicleDetect.IsZero(), "detection should be stopped")
+
+	lp.clock.(*clock.Mock).Add(vehicleDetectDuration + time.Second)
+	assert.False(t, lp.vehicleUnidentified())
+
+	assert.Equal(t, vehicle, lp.vehicle, "identified vehicle must not be replaced by fallback")
+	assert.Empty(t, pushChan, "guest vehicle event must not be sent")
 }

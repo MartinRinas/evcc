@@ -457,6 +457,21 @@
 								</FormRow>
 
 								<FormRow
+									v-if="!values.vehicle"
+									id="loadpointParamFallbackVehicle"
+									:label="$t('config.loadpoint.fallbackVehicleLabel')"
+									:help="$t('config.loadpoint.fallbackVehicleHelp')"
+								>
+									<PropertyField
+										id="loadpointParamFallbackVehicle"
+										v-model="values.fallbackVehicle"
+										type="Choice"
+										class="me-2"
+										:choice="fallbackVehicleOptions"
+									/>
+								</FormRow>
+
+								<FormRow
 									id="loadpointPollMode"
 									:label="$t('config.loadpoint.pollModeLabel')"
 									:help="
@@ -679,6 +694,7 @@ const defaultValues = {
 		maxTemp: 100,
 	},
 	vehicle: "",
+	fallbackVehicle: "",
 	charger: "",
 	circuit: "",
 	meter: "",
@@ -879,6 +895,13 @@ export default {
 				...this.vehicleOptions,
 			];
 		},
+		fallbackVehicleOptions() {
+			return [
+				{ key: "", name: this.$t("config.loadpoint.fallbackVehicleGuest") },
+				{ key: null, name: null },
+				...this.vehicleOptions,
+			];
+		},
 		typeChoices(): LoadpointType[] {
 			return Object.values(LOADPOINT_TYPE);
 		},
@@ -902,6 +925,12 @@ export default {
 						this.loadConfiguration();
 					}
 				}
+			}
+		},
+		"values.vehicle"(vehicle) {
+			// a fixed vehicle disables detection, the fallback can never apply
+			if (vehicle) {
+				this.values.fallbackVehicle = "";
 			}
 		},
 		id(newId) {
