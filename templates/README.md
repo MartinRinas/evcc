@@ -248,6 +248,8 @@ auth:
 
 `name` expects a name for the parameter, which will be used in the `render` section to reference the param and provide the user entered value.
 
+Configuration keys are matched case-insensitively. If multiple keys differ only in case, the exact spelling defined by the template takes precedence. If no exact spelling is present, the lexicographically first key is used. Duplicate keys produce a warning containing key names, never values. This applies recursively to configuration maps, but does not rewrite stored configurations.
+
 **Note**: There a few default `name` values with specific internal meaning and consequences!
 
 **Predefined name values**:

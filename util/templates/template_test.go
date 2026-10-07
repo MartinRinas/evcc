@@ -32,6 +32,33 @@ func TestPresets(t *testing.T) {
 	}, tmpl.Params)
 }
 
+func TestVehicleDuplicateCurrentParams(t *testing.T) {
+	tmpl, err := ByName(Vehicle, "offline")
+	require.NoError(t, err)
+
+	values := map[string]any{
+		"title":      "e-up",
+		"capacity":   32.3,
+		"phases":     "2",
+		"maxcurrent": 32,
+		"maxCurrent": 16,
+		"mincurrent": 6,
+		"minCurrent": 6,
+		"maxpower":   7200,
+		"maxPower":   7200,
+	}
+
+	for range 100 {
+		b, res, err := tmpl.RenderResult(Vehicle, RenderModeInstance, values)
+		require.NoError(t, err)
+		require.Equal(t, "16", res["maxCurrent"])
+		require.Equal(t, "6", res["minCurrent"])
+		require.Equal(t, "7200", res["maxPower"])
+		require.Contains(t, string(b), "maxCurrent: 16")
+		require.NotContains(t, string(b), "maxCurrent: 32")
+	}
+}
+
 func TestRequiredString(t *testing.T) {
 	tmpl := &Template{
 		Params: []Param{
