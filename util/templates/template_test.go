@@ -32,6 +32,33 @@ func TestPresets(t *testing.T) {
 	}, tmpl.Params)
 }
 
+func TestVehicleDuplicateCurrentParams(t *testing.T) {
+	tmpl, err := ByName(Vehicle, "offline")
+	require.NoError(t, err)
+
+	values := map[string]any{
+		"title":      "e-up",
+		"capacity":   32.3,
+		"phases":     "2",
+		"maxcurrent": 32,
+		"maxCurrent": 16,
+		"mincurrent": 6,
+		"minCurrent": 6,
+		"maxpower":   7200,
+		"maxPower":   7200,
+	}
+
+	for range 100 {
+		b, res, err := tmpl.RenderResult(Vehicle, RenderModeInstance, values)
+		require.NoError(t, err)
+		require.Equal(t, "16", res["maxCurrent"])
+		require.Equal(t, "6", res["minCurrent"])
+		require.Equal(t, "7200", res["maxPower"])
+		require.Contains(t, string(b), "maxCurrent: 16")
+		require.NotContains(t, string(b), "maxCurrent: 32")
+	}
+}
+
 func TestRequiredString(t *testing.T) {
 	tmpl := &Template{
 		Params: []Param{
@@ -167,6 +194,29 @@ func TestRequiredPerUsage(t *testing.T) {
 	_, _, err = tmpl.RenderResult(Meter, RenderModeUnitTest, map[string]any{
 		"Param": "foo",
 		"Usage": "battery",
+	})
+	require.NoError(t, err)
+}
+
+// TestModbusHostPattern guards that the modbus host is validated like the plain host
+// param instead of rendering invalid yaml (#34380)
+func TestModbusHostPattern(t *testing.T) {
+	tmpl, err := ByName(Meter, "fox-ess-avocado")
+	require.NoError(t, err)
+
+	_, _, err = tmpl.RenderResult(Meter, RenderModeInstance, map[string]any{
+		"usage":  "battery",
+		"modbus": "tcpip",
+		"host":   " 192 . 168 . 178 . 51",
+	})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "host")
+	assert.Contains(t, err.Error(), "does not match required pattern")
+
+	_, _, err = tmpl.RenderResult(Meter, RenderModeInstance, map[string]any{
+		"usage":  "battery",
+		"modbus": "tcpip",
+		"host":   "192.168.178.51",
 	})
 	require.NoError(t, err)
 }
