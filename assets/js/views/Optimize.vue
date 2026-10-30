@@ -4,7 +4,7 @@
 		:class="{ 'empty-container': !hasResult }"
 	>
 		<TopHeader title="Optimize Debug 🧪" />
-		<OptimizerModal :is-sponsor="isSponsor" />
+		<OptimizerModal :is-sponsor="isSponsor" :profile-percentile="profilePercentile" />
 		<div v-if="!optimizer" class="flex-grow-1 d-flex">
 			<div class="empty-box d-flex flex-column p-5">
 				<p class="text-muted mb-4">The optimizer is disabled.</p>
@@ -239,6 +239,9 @@ export default defineComponent({
 		return { title: "Optimize Debug" };
 	},
 	computed: {
+		profilePercentile(): number | undefined {
+			return store.state.profilePercentile ?? undefined;
+		},
 		// the last explanation evcc published, in the language it was requested in
 		explained(): EvOptExplanation | undefined {
 			return store.state["evopt-explanation"];

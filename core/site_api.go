@@ -451,7 +451,7 @@ func (site *Site) SetGridExportLimit(power float64) error {
 	return nil
 }
 
-// GetProfilePercentile returns the percentile of the historic energy profiles in %, nil = average
+// GetProfilePercentile returns the household base load percentile in %, nil = average.
 func (site *Site) GetProfilePercentile() *float64 {
 	if v, err := settings.Float(keys.ProfilePercentile); err == nil {
 		return &v
@@ -459,7 +459,7 @@ func (site *Site) GetProfilePercentile() *float64 {
 	return nil
 }
 
-// SetProfilePercentile sets the percentile of the historic energy profiles in %, nil = average
+// SetProfilePercentile sets the household base load percentile in %, nil = average.
 func (site *Site) SetProfilePercentile(percentile *float64) error {
 	if percentile == nil {
 		if err := settings.Delete(keys.ProfilePercentile); err != nil {

@@ -886,6 +886,14 @@
           "status": "{automatic} is off. The optimizer only suggests."
         }
       },
+      "consumption": {
+        "average": "Average",
+        "description": "Household base load the optimizer plans with, based on the last 4 weeks. Higher percentiles favor higher consumption in each time slot and can lead to more advance grid charging. Separate heating profiles, vehicle charging and PV forecasts are unchanged.",
+        "label": "Expected consumption",
+        "p60": "Cautious",
+        "p75": "More cautious",
+        "p90": "Very cautious"
+      },
       "controlled": "Disabled by automatic control. The {optimizer} decides instead.",
       "controls": "Controls",
       "linkWord": "optimizer",

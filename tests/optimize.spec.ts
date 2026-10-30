@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { start, stop, baseUrl } from "./evcc";
+import { start, stop, restart, baseUrl } from "./evcc";
 import { expectModalVisible, openMoreMenu } from "./utils";
 
 const CONFIG = "basics.evcc.yaml";
@@ -42,5 +42,34 @@ test.describe("optimize page", async () => {
     await page.getByRole("button", { name: "Open settings" }).click();
     await expectModalVisible(page.getByTestId("optimizer-modal"));
     await expect(page).toHaveURL("/#/optimize");
+  });
+});
+
+test.describe("optimizer settings", async () => {
+  test("expected consumption", async ({ page }) => {
+    const profilePercentile = async () =>
+      (await (await page.request.get("/api/state")).json()).profilePercentile ?? null;
+    const modal = page.getByTestId("optimizer-modal");
+
+    await page.goto("/#/config");
+    await page.getByTestId("optimizer").getByRole("button", { name: "edit" }).click();
+    await expectModalVisible(modal);
+    const select = modal.getByLabel("Expected consumption");
+    await expect(select).toHaveValue("");
+
+    await select.selectOption({ label: "Very cautious" });
+    await expect.poll(profilePercentile).toBe(90);
+
+    await restart(CONFIG);
+    await page.reload();
+    await expectModalVisible(modal);
+    await expect(select).toHaveValue("90");
+
+    await expect(await page.request.post("/api/profilepercentile/82")).toBeOK();
+    await expect(select).toHaveValue("82");
+    await expect(select.getByRole("option", { name: "P82", exact: true })).toHaveCount(1);
+
+    await select.selectOption({ label: "Average" });
+    await expect.poll(profilePercentile).toBeNull();
   });
 });

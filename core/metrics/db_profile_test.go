@@ -110,8 +110,8 @@ func TestEnergyProfileTemperatureBinned(t *testing.T) {
 	// Old data from day -400 (temp 10°C) must not be included
 	require.NotContains(t, res[0], 10)
 
-	// Verify with percentile > 0
-	settings.SetFloat(keys.ProfilePercentile, 50)
+	// The household percentile must not change temperature-binned heating profiles.
+	settings.SetFloat(keys.ProfilePercentile, 90)
 	t.Cleanup(func() { require.NoError(t, settings.Delete(keys.ProfilePercentile)) })
 
 	resPerc, err := energyProfileTemperatureBinned(e)
@@ -119,4 +119,61 @@ func TestEnergyProfileTemperatureBinned(t *testing.T) {
 	require.Len(t, resPerc, 96)
 	require.Contains(t, resPerc[0], 4)
 	require.InDelta(t, 0.55, resPerc[0][4], 1e-6)
+	require.Equal(t, res, resPerc)
+}
+
+func TestProfilePercentileScope(t *testing.T) {
+	require.NoError(t, db.NewInstance("sqlite", ":memory:"))
+	require.NoError(t, SetupSchema())
+	t.Cleanup(func() { require.NoError(t, settings.Delete(keys.ProfilePercentile)) })
+
+	temp := 5.0
+	for week := range 4 {
+		base := now.BeginningOfDay().AddDate(0, 0, -28+week*7)
+		for slot := range 96 {
+			ts := base.Add(time.Duration(slot) * tariff.SlotDuration)
+			require.NoError(t, db.Instance.Create(&tariffValue{
+				Timestamp: ts.Unix(), Temperature: &temp,
+			}).Error)
+		}
+	}
+
+	for _, group := range []string{Home, Loadpoint, Consumer, PV, Grid, Battery, Meter} {
+		t.Run(group, func(t *testing.T) {
+			col, err := NewCollector(group, group, group)
+			require.NoError(t, err)
+			for week, energy := range []float64{1, 1, 1, 9} {
+				base := now.BeginningOfDay().AddDate(0, 0, -28+week*7)
+				for slot := range 96 {
+					ts := base.Add(time.Duration(slot) * tariff.SlotDuration)
+					require.NoError(t, persist(col.entity, ts, energy, 0, nil, false))
+				}
+			}
+
+			for _, percentile := range []float64{0, 90} {
+				settings.SetFloat(keys.ProfilePercentile, percentile)
+				expected := 3.0
+				if group == Home && percentile == 90 {
+					expected = 6.6
+				}
+
+				daily, err := col.EnergyProfile(now.BeginningOfDay().AddDate(0, 0, -28))
+				require.NoError(t, err)
+				weekday, err := col.EnergyProfileWeekday(time.Now().Weekday())
+				require.NoError(t, err)
+				for slot := range 96 {
+					require.InDelta(t, expected, daily[slot], 1e-6)
+					require.InDelta(t, expected, weekday[slot], 1e-6)
+				}
+
+				if group == Loadpoint {
+					binned, err := col.EnergyProfileTemperatureBinned()
+					require.NoError(t, err)
+					for slot := range 96 {
+						require.InDelta(t, 3.0, binned[slot][5], 1e-6)
+					}
+				}
+			}
+		})
+	}
 }
