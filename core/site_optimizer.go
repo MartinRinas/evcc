@@ -701,6 +701,9 @@ func (site *Site) optimizerRequest(battery []types.Measurement) (optimizer.Optim
 		batteries = append(batteries, optimizerBattery{cfg, detail})
 	}
 
+	// plan below the expected solar forecast where insurance energy is worth it
+	site.solarMargin(req.TimeSeries, battery)
+
 	for _, b := range batteries {
 		b.cfg.PA = pa
 		req.Batteries = append(req.Batteries, b.cfg)

@@ -148,6 +148,7 @@ The optimizer (`optimizer.evcc.io`, sponsor-gated) solves a linear program over 
 - **Loadpoint with vehicle**: `loadpointRequest`, `detail.Type = vehicle`, `detail.loadpoint = &id`, always `controllable`. Needs vehicle capacity (or a session energy limit) to model as storage. `ModeOff` sets `CMax = 0`; `ModeNow` and plans produce a `PDemand` / `SGoal`.
 - **Unmodellable loadpoints** (no vehicle, no capacity and no energy limit, or heaters) are added to the home load (`addUnmodelledLoad`) and get no suggestion.
 - Disconnected loadpoints are skipped entirely.
+- **Forecast uncertainty**: after loadpoints are added, `solarMargin` (`core/site_optimizer_margin.go`) lowers `Ft` by the installation's forecast error at a cost-derived percentile `q` (no setting; needs a home battery and 14 days of forecast history). Consumption uncertainty is only the `profilePercentile` setting ("Expected consumption"). Rationale and alternatives in `core/optimizer.md`.
 
 Device key (`batteryDetail.key()`): `battery:<name>` or `loadpoint:<id>`; empty key = cannot act.
 
