@@ -44,28 +44,3 @@ test.describe("optimize page", async () => {
     await expect(page).toHaveURL("/#/optimize");
   });
 });
-
-test.describe("optimizer settings", async () => {
-  test("expected consumption", async ({ page }) => {
-    const profilePercentile = async () =>
-      (await (await page.request.get("/api/state")).json()).profilePercentile ?? null;
-    const modal = page.getByTestId("optimizer-modal");
-
-    await page.goto("/#/config");
-    await page.getByTestId("optimizer").getByRole("button", { name: "edit" }).click();
-    await expectModalVisible(modal);
-    const select = modal.getByLabel("Expected consumption");
-    await expect(select).toHaveValue("");
-
-    await select.selectOption({ label: "Very cautious" });
-    await expect.poll(profilePercentile).toBe(90);
-
-    // modal reopens from the url
-    await page.reload();
-    await expectModalVisible(modal);
-    await expect(select).toHaveValue("90");
-
-    await select.selectOption({ label: "Average" });
-    await expect.poll(profilePercentile).toBeNull();
-  });
-});

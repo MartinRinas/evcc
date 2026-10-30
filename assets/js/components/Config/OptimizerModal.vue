@@ -62,28 +62,6 @@
 				</div>
 			</div>
 		</div>
-		<div v-if="enabled" class="my-3">
-			<label class="form-label" for="optimizerConsumption">
-				{{ $t("config.optimizer.consumption.label") }}
-			</label>
-			<select
-				id="optimizerConsumption"
-				class="form-select"
-				:value="consumption"
-				@change="changeConsumption"
-			>
-				<option
-					v-for="option in consumptionOptions"
-					:key="option.value"
-					:value="option.value"
-				>
-					{{ option.name }}
-				</option>
-			</select>
-			<div class="form-text evcc-gray">
-				{{ $t("config.optimizer.consumption.description") }}
-			</div>
-		</div>
 		<p v-if="enabled && !hasEvopt" class="text-muted small mt-2">
 			{{ $t("config.optimizer.info") }}
 		</p>
@@ -100,8 +78,6 @@ import store from "@/store";
 import { docsPrefix } from "@/i18n";
 import { OPTIMIZER_AUTOMATIC } from "@/types/evcc";
 import type { AxiosError } from "axios";
-
-const CONSUMPTION_PERCENTILES = [60, 75, 90];
 
 export default defineComponent({
 	name: "OptimizerModal",
@@ -134,24 +110,6 @@ export default defineComponent({
 		docsLink(): string {
 			return `${docsPrefix()}/features/optimizer`;
 		},
-		consumption(): string {
-			const value = store.state?.profilePercentile;
-			return value === null || value === undefined ? "" : String(value);
-		},
-		consumptionOptions(): { value: string; name: string }[] {
-			const options = [
-				{ value: "", name: this.$t("config.optimizer.consumption.average") },
-				...CONSUMPTION_PERCENTILES.map((p) => ({
-					value: String(p),
-					name: this.$t(`config.optimizer.consumption.p${p}`),
-				})),
-			];
-			// keep a value set via API selectable
-			if (!options.some((o) => o.value === this.consumption)) {
-				options.push({ value: this.consumption, name: `P${this.consumption}` });
-			}
-			return options;
-		},
 	},
 	methods: {
 		async change(e: Event) {
@@ -165,21 +123,10 @@ export default defineComponent({
 		async changeLevel(e: Event) {
 			await this.post(`config/optimizerautomatic/${(e.target as HTMLSelectElement).value}`);
 		},
-		async changeConsumption(e: Event) {
-			const { value } = e.target as HTMLSelectElement;
-			if (value === "") {
-				await this.request("delete", "profilepercentile");
-			} else {
-				await this.request("post", `profilepercentile/${value}`);
-			}
-		},
 		async post(url: string) {
-			await this.request("post", url);
-		},
-		async request(method: "post" | "delete", url: string) {
 			try {
 				this.error = null;
-				await api[method](url);
+				await api.post(url);
 			} catch (err) {
 				const e = err as AxiosError<{ error: string }>;
 				this.error = e.response?.data?.error || e.message;

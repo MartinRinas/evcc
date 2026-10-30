@@ -886,14 +886,6 @@
           "status": "{automatic} ist aus. Der Optimizer schlägt nur vor."
         }
       },
-      "consumption": {
-        "average": "Durchschnitt",
-        "description": "Verbrauch, mit dem der Optimizer plant, basierend auf den letzten 4 Wochen. Vorsichtige Werte halten mehr Energie in der Hausbatterie für unerwartet hohen Verbrauch vor, dafür wird mehr im Voraus aus dem Netz bezogen. Abweichungen der PV-Vorhersage werden automatisch berücksichtigt.",
-        "label": "Erwarteter Verbrauch",
-        "p60": "Vorsichtig",
-        "p75": "Vorsichtiger",
-        "p90": "Sehr vorsichtig"
-      },
       "controlled": "Durch automatische Steuerung deaktiviert. Der {optimizer} entscheidet stattdessen.",
       "controls": "Steuert",
       "description": "Nutzt PV-Vorhersage, Energiepreise und deinen typischen Verbrauch, um Batterie und Laden zu planen. Daten werden an den evcc Optimierungsdienst übertragen.",
