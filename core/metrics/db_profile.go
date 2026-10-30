@@ -16,8 +16,12 @@ var (
 	ErrNoBinnedData = errors.New("no temperature-binned data available")
 )
 
-// profilePercentile returns the configured per-slot percentile of the energy profiles (0..1), 0 = average
-func profilePercentile() float64 {
+// profilePercentile applies the configured percentile only to the household base load.
+func profilePercentile(e entity) float64 {
+	if e.Group != Home {
+		return 0
+	}
+
 	v, err := settings.Float(keys.ProfilePercentile)
 	if err != nil {
 		return 0
@@ -111,7 +115,7 @@ func energyProfileFiltered(entity entity, from time.Time, weekday *int, percenti
 }
 
 // energyProfileTemperatureBinned returns the energy per 15min slot (0..95) and integer outdoor
-// temperature bin (°C) over the past year at profilePercentile, bins with less than 2 samples dropped.
+// temperature bin (°C) over the past year, averaged with bins below 2 samples dropped.
 func energyProfileTemperatureBinned(entity entity) (map[int]map[int]float64, error) {
 	database, err := db.Instance.DB()
 	if err != nil {
@@ -136,21 +140,6 @@ func energyProfileTemperatureBinned(entity entity) (map[int]map[int]float64, err
 		FROM slots
 		GROUP BY slot_idx, temp_bin
 		HAVING count(*) >= 2`
-
-	if percentile := profilePercentile(); percentile > 0 {
-		args = append(args, percentile)
-		query = `WITH slots AS (` + slots + `), ranked AS (
-			SELECT slot_idx, temp_bin, energy,
-				row_number() OVER (PARTITION BY slot_idx, temp_bin ORDER BY energy) AS rn,
-				count(*) OVER (PARTITION BY slot_idx, temp_bin) AS cnt,
-				? * (count(*) OVER (PARTITION BY slot_idx, temp_bin) - 1) + 1 AS pos
-			FROM slots
-		)
-		SELECT slot_idx, temp_bin, sum(energy * (1 - abs(rn - pos))) AS energy
-		FROM ranked
-		WHERE cnt >= 2 AND abs(rn - pos) < 1
-		GROUP BY slot_idx, temp_bin`
-	}
 
 	rows, err := database.Query(query, args...)
 	if err != nil {

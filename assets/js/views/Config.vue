@@ -575,7 +575,7 @@
 					@disable="({ id, disable }) => handleDisable('tariff', id, disable)"
 				/>
 				<TelemetryModal :is-sponsor="isSponsor" :telemetry="telemetry" />
-				<OptimizerModal :is-sponsor="isSponsor" />
+				<OptimizerModal :is-sponsor="isSponsor" :profile-percentile="profilePercentile" />
 				<McpModal />
 				<DiscoveryModal />
 				<ExperimentalModal :experimental="experimental" />
@@ -864,6 +864,9 @@ export default defineComponent({
 		return { title: this.$t("config.main.title") };
 	},
 	computed: {
+		profilePercentile(): number | undefined {
+			return store.state.profilePercentile ?? undefined;
+		},
 		activeSlug(): string | undefined {
 			const slug = this.$route.hash.slice(1);
 			return SECTION_TITLES[slug] ? slug : undefined;

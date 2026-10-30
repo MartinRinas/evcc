@@ -255,7 +255,7 @@ export interface State {
   residualPower?: number;
   /** Static grid export power limit in W used as optimizer constraint, 0 = disabled. An active HEMS curtailment takes precedence. */
   gridExportLimit?: number;
-  /** Percentile of the historic energy profiles used for demand prediction in %, e.g. 50 = median. Null uses the average. */
+  /** Per-slot percentile of the historic household base load in %, e.g. 50 = median. Null uses the average. Does not affect separate heating or vehicle profiles. */
   profilePercentile?: number | null;
   /** Share of green energy in home consumption, between 0 and 1. */
   greenShareHome?: number;

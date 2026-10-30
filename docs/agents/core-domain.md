@@ -148,6 +148,7 @@ The optimizer (`optimizer.evcc.io`, sponsor-gated) solves a linear program over 
 - **Loadpoint with vehicle**: `loadpointRequest`, `detail.Type = vehicle`, `detail.loadpoint = &id`, always `controllable`. Needs vehicle capacity (or a session energy limit) to model as storage. `ModeOff` sets `CMax = 0`; `ModeNow` and plans produce a `PDemand` / `SGoal`.
 - **Unmodellable loadpoints** (no vehicle, no capacity and no energy limit, or heaters) are added to the home load (`addUnmodelledLoad`) and get no suggestion.
 - Disconnected loadpoints are skipped entirely.
+- **Consumption percentile**: `profilePercentile` ("Expected consumption") applies only to the `metrics.Home` base load collector. Heating daily, weekday and temperature-binned profiles retain averages. Unmetered appliances remain part of the household aggregate. See `core/optimizer.md`.
 
 Device key (`batteryDetail.key()`): `battery:<name>` or `loadpoint:<id>`; empty key = cannot act.
 
