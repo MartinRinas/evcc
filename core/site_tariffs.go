@@ -264,26 +264,26 @@ const (
 // percentile: solarScalePercentile). This captures the installation's systematic
 // bias (soiling, shading, model error) instead of a single day's weather noise.
 // The current (partial) day is excluded; returns 1 when there is not enough history.
-//
-// Depends only on completed days, so it's cached instead of recomputed per run.
-//
-// The result only depends on completed days, so it cannot change within a day. It is
-// cached accordingly instead of being recomputed on every optimizer run.
 func (site *Site) solarScale() float64 {
-	scale, err := site.solarScaleCached()
+	ratios, err := site.solarRatiosCached()
 	if err != nil {
+		return 1
+	}
+	scale, ok := percentileOf(ratios, solarScalePercentile, solarScaleMinSamples)
+	if !ok {
 		return 1
 	}
 	return scale
 }
 
-// querySolarScale does the actual metrics query and percentile calculation
-// for solarScale, given the current beginning-of-day boundary.
-func (site *Site) querySolarScale(bod time.Time) (float64, error) {
+// querySolarRatios returns the daily produced/forecasted solar ratios of the
+// completed days before the given beginning-of-day boundary. They only depend
+// on completed days, so they are cached instead of queried per optimizer run.
+func (site *Site) querySolarRatios(bod time.Time) ([]float64, error) {
 	from := bod.AddDate(0, 0, -solarScaleWindow)
 	series, err := metrics.QueryEnergy(from, time.Now(), "day", true)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	pv := make(map[string]float64, solarScaleWindow)
@@ -315,12 +315,10 @@ func (site *Site) querySolarScale(bod time.Time) (float64, error) {
 		}
 	}
 
-	scale, ok := percentileOf(ratios, solarScalePercentile, solarScaleMinSamples)
-	if !ok {
-		return 1, nil
+	if scale, ok := percentileOf(ratios, solarScalePercentile, solarScaleMinSamples); ok {
+		site.log.DEBUG.Printf("solar scale P%.0f over %d days = %.3f", solarScalePercentile*100, len(ratios), scale)
 	}
-	site.log.DEBUG.Printf("solar scale P%.0f over %d days = %.3f", solarScalePercentile*100, len(ratios), scale)
-	return scale, nil
+	return ratios, nil
 }
 
 // percentileOf returns the p-th percentile (0..1) of values by nearest-rank on the

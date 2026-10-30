@@ -130,7 +130,7 @@ type Site struct {
 	optimizerMu      sync.Mutex // guards optimizer runs
 	optimizerUpdated time.Time  // last optimizer run, guarded by optimizerMu
 
-	solarScaleCached func() (float64, error) // util.Cached wrapper around querySolarScale
+	solarRatiosCached func() ([]float64, error) // util.Cached wrapper around querySolarRatios
 }
 
 // siteState is the site's cached measurement state, updated once per meter cycle
@@ -411,12 +411,12 @@ func NewSite() *Site {
 	}
 
 	// the result only depends on completed days, so it cannot change within a day
-	site.solarScaleCached = util.Cached(func() (float64, error) {
-		scale, err := site.querySolarScale(now.BeginningOfDay())
+	site.solarRatiosCached = util.Cached(func() ([]float64, error) {
+		ratios, err := site.querySolarRatios(now.BeginningOfDay())
 		if err != nil {
-			site.log.ERROR.Printf("solar scale percentile: %v, falling back to unadjusted forecast", err)
+			site.log.ERROR.Printf("solar forecast ratios: %v, falling back to unadjusted forecast", err)
 		}
-		return scale, err
+		return ratios, err
 	}, 24*time.Hour)
 
 	return site
