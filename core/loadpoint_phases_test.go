@@ -746,6 +746,7 @@ func TestFastChargingCircuitBasedPhaseScaling(t *testing.T) {
 		{desc: "no circuit, charging at 1p", activePhases: 1, phasesConfigured: 0, status: api.StatusC, chargePower: 3680, expectedPhases: 3, noCircuit: true, phaseTimerRunning: true},
 
 		// unknown phases after restart must not prevent switching
+		{desc: "unknown phases, charging 1p measured, high limit", phasesConfigured: 0, activePhases: 0, measuredPhases: 1, status: api.StatusC, chargePower: 3680, availableCircuitPower: 22080, expectedPhases: 3},
 		{desc: "unknown phases, high limit", phasesConfigured: 0, activePhases: 0, status: api.StatusB, chargePower: 0, availableCircuitPower: 11040, expectedPhases: 3},
 		{desc: "unknown phases, low limit", phasesConfigured: 0, activePhases: 0, status: api.StatusB, chargePower: 0, availableCircuitPower: 3680, expectedPhases: 1},
 
